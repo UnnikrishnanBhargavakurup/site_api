@@ -1,0 +1,7 @@
+name = Site API for "Page node information"
+description = Provide an API for accessing page node infoamtion as JSON format
+core = 7.x
+configure = admin/config/system/site-information
+files[] = site_api.module
+
+

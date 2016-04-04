@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ *
+ * This module expose an API for accessing page node infoamtion as JSON format.
+ * If API key or the provided node id is valid it will reponse node data as JSON
+ * format otherwise it will show "assess denied".
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function site_api_menu() {
+  $items = array();
+  $items['page_json/%/%'] = array(
+    'title' => 'Get content details',
+    'description' => 'Get JSON representation of a node',
+    'page callback' => 'site_api_get_page_data',
+    'page arguments' => array(1, 2),
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}
+
+/**
+ * Implementing page callback function for getting page data as JSON
+ *
+ * @param $api_key
+ *  API key for accessing the API
+ * @param $nid
+ *  Node Id for which data to be send.
+ */
+function site_api_get_page_data($api_key, $nid) {
+  $site_api_key = variable_get('siteapikey', 'No API Key yet');
+  // checking if we have right API key
+  if(
+      $site_api_key != "" &&
+      $site_api_key != "No API Key yet" &&
+      $site_api_key == $api_key &&
+      is_numeric($nid)
+    )
+  {
+    $node = node_load($nid);
+    if($node && $node->type == "page" && $node->status == TRUE) {
+      drupal_json_output($node);
+    }
+    else {
+      drupal_json_output(array("access denied"));
+    }
+  }
+  else {
+    drupal_json_output(array("access denied"));
+  }
+}
+
+/**
+ * Implementation of hook_form_alter()
+ */
+function site_api_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'system_site_information_settings') {
+    $form['site_apis'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('API keys'),
+      '#collapsible' => FALSE,
+    );
+    $form['site_apis']['siteapikey'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Site API Key',
+      '#description' => t('Specify the API key for accessing content APIs'),
+      '#default_value' => variable_get('siteapikey', 'No API Key yet'),
+    );
+    $form['actions']['submit']['#value'] = t('Update Configuration');
+    $form['#submit'][] = 'site_api_save_api_keys';
+  }
+}
+
+/**
+ * Custom submit handler for showing a success message
+ * on saving the API key.
+ */
+function site_api_save_api_keys($form, $form_state) {
+  $site_api_key = variable_get('siteapikey', 'No API Key yet');
+  if($site_api_key != "" && $site_api_key != "No API Key yet") {
+    drupal_set_message("Site API Key has been saved successfully!");
+  }
+}
